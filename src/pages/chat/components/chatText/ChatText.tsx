@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import "quill/dist/quill.snow.css";
 import "./style.less"
 import {message} from "antd";
-import {Sender, XStream} from "@ant-design/x";
-import { Msg, ChatWinProps} from "@/types";
+import {Sender} from "@ant-design/x";
+import { Msg, ChatWinProps} from "../../../../types";
 
 const ChatText: React.FC<ChatWinProps> = (props) => {
     const {session,setSession} = props
@@ -11,10 +11,10 @@ const ChatText: React.FC<ChatWinProps> = (props) => {
     const [loading, setLoading] = useState<boolean>(false);
 
 
-    const sendMsg = async (v: string) => {
+    const sendMsg = async (content: string) => {
         const msg: Msg = {
             id: Date.now(), // 随机生成id
-            content: v,
+            content: content,
             time: new Date().toLocaleTimeString(),
             type: "self",
             placement: "end",
@@ -24,9 +24,8 @@ const ChatText: React.FC<ChatWinProps> = (props) => {
         }
         setSession({
             ...session,
-            userMsgList: [...session.userMsgList, msg]
+            msgList: [...session.msgList, msg]
         })
-
     }
 
     return (

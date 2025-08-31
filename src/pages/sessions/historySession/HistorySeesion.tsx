@@ -1,17 +1,14 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import "./style.less"
-import {DeleteOutlined, EditOutlined, StopOutlined} from '@ant-design/icons';
+import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import {Conversations} from '@ant-design/x';
 import type {ConversationsProps} from '@ant-design/x';
-import {type GetProp, message, theme} from 'antd';
-
-const items: GetProp<ConversationsProps, 'items'> = Array.from({length: 20}).map((_, index) => ({
-    key: `item${index + 1}`,
-    label: `Conversation Item ${index + 1}`,
-}));
+import {GetProp, message, theme} from 'antd';
+import {delSession, queryAllSessions} from "../../../api/chat/chat";
 
 const HistorySession: React.FC = () => {
     const { token } = theme.useToken();
+    const [items, setItems] = useState<GetProp<ConversationsProps, 'items'>>([]);
     const style = {
         width: "100%",
         background: "#fafafa",
@@ -33,9 +30,44 @@ const HistorySession: React.FC = () => {
         ],
         onClick: (menuInfo) => {
             menuInfo.domEvent.stopPropagation();
-            message.info(`Click ${conversation.key} - ${menuInfo.key}`);
+            handleDelSession(conversation.key).then().catch(e=>{
+                console.log("调用删除会话报错:",e)
+            })
         },
     });
+
+    // 获取所有会话
+    const getAllSessions = async () => {
+        const res = await queryAllSessions() as any
+        const tempItems = res.data.map((item: any) => {
+            return {
+                key: item.id,
+                label: item.title,
+                timestamp: item.time,
+                group: "",
+                icon: "",
+                disabled: false
+            }
+        })
+        setItems(tempItems)
+    }
+
+    // 删除会话
+    const handleDelSession = async (id: string) => {
+        const res = await delSession({id}) as any
+        if (res.code === 200) {
+            message.success("删除成功")
+            getAllSessions().then().catch(e=>{
+                console.log("删除会话刷新列表报错:",e)
+            })
+        }
+    }
+
+    useEffect(() => {
+        getAllSessions().then().catch(e=>{
+            console.log("getAllSessions error",e)
+        })
+    }, []);
 
     return (
         <>

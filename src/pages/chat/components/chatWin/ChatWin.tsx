@@ -1,5 +1,5 @@
 import React, {useEffect} from "react";
-import {ChatWinProps, Msg} from "@/types"
+import {ChatWinProps, Msg} from "../../../../types"
 import {Bubble} from "@ant-design/x";
 import "./style.less"
 import {UserOutlined} from "@ant-design/icons";
@@ -20,8 +20,7 @@ const ChatWin: React.FC<ChatWinProps> = (props) => {
     }
 
     useEffect(() => {
-        let newMsgList = [...session.userMsgList, ...session.aiMsgList]
-        setMsgList([...session.userMsgList, ...session.aiMsgList])
+        setMsgList(session.msgList)
         scrollToEnd()
     }, [session])
 

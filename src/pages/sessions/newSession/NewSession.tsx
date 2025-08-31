@@ -12,11 +12,7 @@ const NewSession:React.FC = () => {
     const handleCreateSession = async () => {
         const res = await createSession() as CommonResponse<Session>
         if(res.code === 200){
-            if(!res.data.userMsgList) res.data.userMsgList = []
-            if(!res.data.userMsgList) res.data.aiMsgList = []
-            // todo 调整结构
-            res.data.userMsgList = []
-            res.data.aiMsgList = []
+            res.data.msgList = []
             eventBus.emit("addSession", res.data)
         }else{
             message.warning(res.message)

@@ -1,10 +1,11 @@
 import React, {useEffect, useState} from "react";
 import "./style.less"
 import {Msg, Session} from "@/types"
-import ChatWin from "./chatWin/ChatWin";
-import ChatText from "./chatText/ChatText";
+import ChatWin from "./components/chatWin/ChatWin";
+import ChatText from "./components/chatText/ChatText";
 import eventBus from "@/utils/eventBus";
 import {XStream} from "@ant-design/x";
+import {queryAllSessions} from "../../api/chat/chat";
 
 const Chat:React.FC = () => {
     const [session, setSession] = useState<Session>()
@@ -17,14 +18,14 @@ const Chat:React.FC = () => {
             content: content,
             model: "qwen-turbo"
         }
-        console.log("userMsgList 2",session.userMsgList)
+        console.log("before response",session.msgList)
         const response = await fetch("http://localhost:3000/chat/ask",{method: "POST", body: JSON.stringify(data)})
         let accumulatedContent = "";
         const msgId = Date.now();
         for await (const chunk of XStream({
             readableStream: response.body,
         })) {
-            console.log("userMsgList 3",session.userMsgList)
+            console.log("response",session.msgList)
             if(chunk.event === "end") return
 
             // 安全解析JSON数据
@@ -63,22 +64,23 @@ const Chat:React.FC = () => {
             };
 
             // 检查消息是否已存在
-            const existIndex = session.aiMsgList.findIndex(item => item.id === msgId);
+            const existIndex = session.msgList.findIndex(item => item.id === msgId);
 
             if (existIndex !== -1) {
                 // 更新现有消息
-                const updatedMsgList = [...session.aiMsgList];
+                const updatedMsgList = [...session.msgList];
                 updatedMsgList[existIndex] = newMsg;
                 console.log("updatedMsgList",updatedMsgList)
                 setSession({
                     ...session,
-                    aiMsgList: updatedMsgList
+                    msgList: updatedMsgList
                 });
             } else {
+                console.log("ai newMsg",newMsg)
                 // 添加新消息
                 setSession({
                     ...session,
-                    aiMsgList: [...session.aiMsgList, newMsg]
+                    msgList: [...session.msgList, newMsg]
                 });
             }
         }
@@ -88,24 +90,29 @@ const Chat:React.FC = () => {
     eventBus.on("addSession", (newSession: Session) => {
         setSession({
             ...newSession,
-            userMsgList: newSession.userMsgList || [],
-            aiMsgList: newSession.aiMsgList || []
+            msgList: newSession.msgList || [],
         })
     })
 
-    useEffect(() => {
-        console.log("session",session)
-    }, [session]);
-
-    useEffect(() => {
-        if (!session?.userMsgList || session.userMsgList.length === 0) return;
-
-        const lastUserMsg = session.userMsgList[session.userMsgList.length - 1];
-        // 确保这是新消息且不是AI消息
-        if (lastUserMsg && lastUserMsg.type === "self") {
-            queryQwen(lastUserMsg.content);
+    // 获取AI回复
+    const queryAi = (ai: string,content: string)=>{
+        switch (ai) {
+            case "qwen":
+                queryQwen(content).then().catch(e=>{
+                    console.log("queryAi error",e)
+                })
+                break;
         }
-    }, [session?.userMsgList]);
+    }
+
+    // 监听列表最新消息
+    useEffect(() => {
+        // console.log("update session",session)
+        if(session?.msgList.length > 0 && session?.msgList[session?.msgList.length - 1].type === "self"){
+            const content = session?.msgList[session?.msgList.length - 1].content
+            queryAi("qwen", content)
+        }
+    }, [session?.msgList]);
 
     return (
         <div className="chat">

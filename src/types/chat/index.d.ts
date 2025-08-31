@@ -2,8 +2,7 @@
 export interface Session {
     id: number;
     title: string;
-    userMsgList: Msg[];
-    aiMsgList: Msg[];
+    msgList: Msg[];
 }
 
 export interface Msg {
