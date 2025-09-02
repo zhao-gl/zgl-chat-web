@@ -94,6 +94,14 @@ const Chat:React.FC = () => {
         })
     })
 
+    // 接收新会话
+    eventBus.on("activeSession", (newSession: Session) => {
+        setSession({
+            ...newSession,
+            msgList: newSession.msgList || [],
+        })
+    })
+
     // 获取AI回复
     const queryAi = (ai: string,content: string)=>{
         switch (ai) {

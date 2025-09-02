@@ -4,16 +4,21 @@ import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import {Conversations} from '@ant-design/x';
 import type {ConversationsProps} from '@ant-design/x';
 import {GetProp, message, theme} from 'antd';
-import {delSession, queryAllSessions} from "../../../api/chat/chat";
+import {createSession, delSession, queryAllSessions, querySessionById} from "../../../api/chat/chat";
+import {CommonResponse, Session} from "../../../types";
+import eventBus from "../../../utils/eventBus";
 
 const HistorySession: React.FC = () => {
     const { token } = theme.useToken();
     const [items, setItems] = useState<GetProp<ConversationsProps, 'items'>>([]);
+    const [activeKey, setActiveKey] = useState<ConversationsProps['activeKey']>(items[0]?.key);
     const style = {
         width: "100%",
         background: "#fafafa",
         borderRadius: token.borderRadius,
     };
+
+    // 菜单配置
     const menuConfig: ConversationsProps['menu'] = (conversation) => ({
         items: [
             {
@@ -52,6 +57,17 @@ const HistorySession: React.FC = () => {
         setItems(tempItems)
     }
 
+    // 激活会话
+    const handleActiveSession = async (id: string) => {
+        const res = await querySessionById({id}) as CommonResponse<Session>
+        if(res.code === 200){
+            res.data.msgList = []
+            eventBus.emit("activeSession", res.data)
+        }else{
+            message.warning(res.message)
+        }
+    }
+
     // 删除会话
     const handleDelSession = async (id: string) => {
         const res = await delSession({id}) as any
@@ -72,7 +88,19 @@ const HistorySession: React.FC = () => {
     return (
         <>
             <div className={"history"}>
-                <Conversations defaultActiveKey="item1" menu={menuConfig} items={items} style={style}/>
+                <Conversations
+                    defaultActiveKey={items[0]?.key}
+                    activeKey={activeKey}
+                    menu={menuConfig}
+                    items={items}
+                    style={style}
+                    onActiveChange={(key: string)=>{
+                        setActiveKey(key)
+                        handleActiveSession(key).then().catch(e=>{
+                            console.log("激活会话报错:",e)
+                        })
+                    }}
+                />
             </div>
         </>
     );
